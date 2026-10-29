@@ -1,0 +1,15 @@
+{
+  "name": "小账本 · 个人记账",
+  "short_name": "小账本",
+  "description": "本地保存、通知草稿确认的个人记账本",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#f5f6f8",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
+
