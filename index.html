@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f6f8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="小账本" />
+    <meta name="description" content="本地保存、通知草稿确认的个人记账本" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="app.css?v=2" />
+    <title>小账本</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">PERSONAL LEDGER</p>
+          <h1>小账本<span class="local-badge"><i></i>仅本机</span></h1>
+        </div>
+        <button class="icon-button" id="settings-open" aria-label="打开设置" title="设置">⚙</button>
+      </header>
+
+      <section class="summary-card" aria-label="收支汇总">
+        <div class="summary-heading">
+          <div>
+            <p class="eyebrow light">今日净支出</p>
+            <div class="amount-large" id="today-net">¥0.00</div>
+          </div>
+          <div class="date-chip" id="today-label"></div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-pair">
+          <div><span>今日支出</span><strong id="today-out">¥0.00</strong></div>
+          <div><span>今日退款</span><strong id="today-refund">− ¥0.00</strong></div>
+        </div>
+        <div class="month-line"><span id="month-label">本月净支出</span><strong id="month-net">¥0.00</strong></div>
+      </section>
+
+      <section class="capture-banner" id="capture-banner" hidden>
+        <div class="capture-icon">⌁</div>
+        <div class="capture-copy"><strong>收到一笔待确认账单</strong><span id="capture-description"></span></div>
+        <button class="text-button" id="capture-review">核对</button>
+      </section>
+
+      <section class="ledger-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">YOUR ACTIVITY</p><h2>最近记录</h2></div>
+          <button class="text-button" id="export-button">备份</button>
+        </div>
+        <div class="filter-row" role="group" aria-label="账单筛选">
+          <button class="filter active" data-filter="all">全部</button>
+          <button class="filter" data-filter="expense">支出</button>
+          <button class="filter" data-filter="refund">退款</button>
+          <button class="filter" data-filter="income">收入</button>
+        </div>
+        <div id="ledger-list" class="ledger-list"></div>
+        <div id="empty-state" class="empty-state" hidden>
+          <div class="empty-illustration">￥</div>
+          <strong>还没有账单</strong>
+          <span>可以手动记一笔，或先验证快捷指令捕获。</span>
+          <button class="button secondary" id="try-capture">试一条通知样例</button>
+        </div>
+      </section>
+
+      <button class="fab" id="add-button" aria-label="新增账单"><span>＋</span><b>记一笔</b></button>
+      <p class="footer-note">数据保存在此设备的浏览器中 · <button id="privacy-info">数据说明</button></p>
+    </main>
+
+    <div class="overlay" id="entry-overlay" hidden>
+      <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="entry-title">
+        <div class="sheet-handle"></div>
+        <div class="sheet-heading"><div><p class="eyebrow" id="entry-kicker">NEW ENTRY</p><h2 id="entry-title">记一笔</h2></div><button class="icon-button close-button" data-close="entry-overlay" aria-label="关闭">×</button></div>
+        <div class="type-switch" id="type-switch">
+          <button data-type="expense" class="selected">支出</button>
+          <button data-type="income">收入</button>
+          <button data-type="refund">退款</button>
+        </div>
+        <label class="field amount-field"><span>金额</span><div class="money-input"><span>¥</span><input id="entry-amount" inputmode="decimal" placeholder="0.00" autocomplete="off" /></div></label>
+        <label class="field"><span>商户 / 用途</span><input id="entry-merchant" maxlength="80" placeholder="例如：午餐、便利店" autocomplete="off" /></label>
+        <div class="field-grid">
+          <label class="field"><span>分类</span><select id="entry-category"></select></label>
+          <label class="field"><span>时间</span><input id="entry-date" type="datetime-local" /></label>
+        </div>
+        <label class="field" id="refund-link-field" hidden><span>冲回哪笔支出</span><select id="entry-refund-link"></select></label>
+        <label class="field"><span>来源</span><select id="entry-source"><option value="manual">手动记录</option><option value="wechat">微信通知</option><option value="alipay">支付宝通知</option><option value="shopping">购物 App 通知</option><option value="other">其他通知</option></select></label>
+        <label class="field"><span>备注 <small>可选</small></span><textarea id="entry-note" rows="2" maxlength="240" placeholder="补充说明"></textarea></label>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+        <div class="sheet-actions"><button class="button secondary" data-close="entry-overlay">取消</button><button class="button primary" id="save-entry">确认入账</button></div>
+      </section>
+    </div>
+
+    <div class="overlay" id="settings-overlay" hidden>
+      <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="sheet-handle"></div>
+        <div class="sheet-heading"><div><p class="eyebrow">PREFERENCES</p><h2 id="settings-title">设置</h2></div><button class="icon-button close-button" data-close="settings-overlay" aria-label="关闭">×</button></div>
+        <div class="settings-callout"><strong>快捷指令接入</strong><p>自动化收到付款通知后，把通知标题和正文传给本页面的捕获地址。页面只解析出账单草稿，仍由你确认后保存。</p><button class="button secondary full" id="show-shortcut-guide">查看设置步骤</button></div>
+        <div class="settings-row"><div><strong>数据位置</strong><span>仅保存在当前设备的浏览器存储</span></div><span class="status-pill">本机</span></div>
+        <div class="settings-row"><div><strong>支出统计</strong><span>支出减去已关联退款，未关联退款单独列示</span></div></div>
+        <button class="button secondary full" id="restore-button">从备份恢复</button>
+        <button class="button danger-outline full" id="clear-data">清空本机账单</button>
+        <p class="small-print">清除网站数据或更换浏览器可能导致账单丢失。建议定期使用「备份」导出文件。</p>
+      </section>
+    </div>
+
+    <div class="overlay" id="guide-overlay" hidden>
+      <section class="sheet guide-sheet" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+        <div class="sheet-handle"></div>
+        <div class="sheet-heading"><div><p class="eyebrow">SHORTCUT AUTOMATION</p><h2 id="guide-title">快捷指令接入</h2></div><button class="icon-button close-button" data-close="guide-overlay" aria-label="关闭">×</button></div>
+        <ol class="guide-steps">
+          <li><b>先把网页添加到主屏幕</b><span>用 Safari 打开本应用，点「分享」→「添加到主屏幕」。</span></li>
+          <li><b>在快捷指令中新建个人自动化</b><span>触发条件选「收到通知」，分别选择微信支付、支付宝等付款通知来源。</span></li>
+          <li><b>将通知内容交给账本</b><span>自动化里使用「打开 URL」，目标地址后追加 <code>#capture?source=wechat&amp;text=</code>，并插入快捷指令提供的通知文本变量。</span></li>
+          <li><b>设为自动运行</b><span>关闭运行前询问。收到通知后页面会生成待确认草稿；核对后点「确认入账」。</span></li>
+        </ol>
+        <div class="privacy-callout"><strong>隐私提示</strong><span>账单只写入当前设备的本地数据库。快捷指令传入的原始通知只用于生成草稿，页面读取后会从地址栏中移除。</span></div>
+        <p class="small-print">iOS 版本、通知内容和快捷指令可用变量会影响识别效果。当前工作区没有公网地址，接入真实通知前还需把静态页面放到 HTTPS 地址；这一步会涉及选择托管方式。</p>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <input type="file" id="restore-file" accept="application/json,.json" hidden />
+    <script src="app.js?v=2" defer></script>
+  </body>
+</html>
+
